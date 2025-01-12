@@ -1,6 +1,6 @@
 CREATE ROLE adminsRol;
 
-GRANT ALL PRIVILEGES ON DATABASE bdpl2_miguel_angel_y_javier TO adminsRol;
+GRANT ALL PRIVILEGES ON DATABASE bdpl2 TO adminsRol;
 CREATE USER admins WITH PASSWORD 'admin_password';
 GRANT adminsRol TO admins;
 
@@ -24,8 +24,15 @@ CREATE USER invitado WITH PASSWORD 'invitado_password';
 GRANT invitadoRol to invitado;
 
 
+CREATE USER jefazo WITH PASSWORD 'jefazo';
+CREATE USER moderador WITH PASSWORD 'mod123';
+CREATE USER randy WITH PASSWORD 'patata93';
+CREATE USER clientela WITH PASSWORD 'tengodinero';
+
+GRANT adminRol TO moderador;
+GRANT gestorRol TO moderador;
+GRANT invitadoRol TO randy;
+GRANT clienteRol TO clientela;
+
 -- User: representa a una persona que interactua en la base de datos
 -- Role: perfil de permisos que asignas, como tu persona (PERSONA ES MID) cuando haces rol, no es real
-
-
--- Necesito saber e porque de cada select de permisos.
