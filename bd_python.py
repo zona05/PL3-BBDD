@@ -1,150 +1,126 @@
 import sys
 import psycopg2
-import pytest
 
-class portException(Exception): pass
+class PortException(Exception): pass
 
+"""
+Solicita un puerto TCP válido.
+"""
 def ask_port(msg):
-    """
-        ask for a valid TCP port
-        ask_port :: String -> IO Integer | Exception
-    """
-    try:                                                                        # try
-        answer  = input(msg)                                                    # pide el puerto
-        port    = int(answer)                                                   # convierte a entero
-        if (port < 1024) or (port > 65535):                                     # si el puerto no es valido
-            raise ValueError                                                    # lanza una excepción
-        else:
-            return port
-    except ValueError:     
-        raise portException                                                     # raise portException
-    #finally:                                                                    # finally
-    #    return port                                                             # return port
+    try:
+        port = int(input(msg))
+        if port < 1024 or port > 65535:
+            raise ValueError
+        return port
+    except ValueError:
+        raise PortException("El puerto no es válido.")
 
+"""
+Solicita parámetros de conexión.
+"""
 def ask_conn_parameters():
-    """
-        ask_conn_parameters:: () -> IO String
-        pide los parámetros de conexión
-        TODO: cada estudiante debe introducir los valores para su base de datos
-    """
-    host = 'localhost'                                                          # 
-    port = ask_port('TCP port number: ')                                        # pide un puerto TCP
-    user = 'oscar'                                                                   # TODO
-    password = 'oscar'                                                               # TODO
-    database = 'discos'                                                               # TODO
-    return (host, port, user,
-             password, database)
+    print("Introduce los datos de conexión:")
+    host = input("Host (default: localhost): ") or "localhost"
+    port = ask_port("Puerto TCP: ")
+    user = input("Usuario: ")
+    password = input("Contraseña: ")
+    database = input("Base de datos: ")
+    return host, port, user, password, database
 
-
+"""
+Muestra las opciones del programa.
+"""
 def opciones_programa():
-    print("Colsulta 1. Mostrar los discos que tengan más de 5 canciones. Construir la expresión equivalente en álgebra relacional")
-    print("Colsulta 2. Mostrar los vinilos que tiene el usuario Juan García Gómez junto con el título del disco, y el país y año de edición del mismo")
-    print("Colsulta 3. Disco con mayor duración de la colección. Construir la expresión equivalente en álgebra relacional")
-    print("Colsulta 4. De los discos que tiene en su lista de deseos el usuario Juan García Gómez, indicar el nombre de los grupos musicales que los interpretan")
-    print("Colsulta 5. Mostrar los discos publicados entre 1970 y 1972 junto con sus ediciones ordenados por el año de publicación.")
-    print("Colsulta 6. Listar el nombre de todos los grupos que han publicado discos del género ‘Electronic’. Construir la expresión equivalente en álgebra relacional")
-    print("Colsulta 7. Lista de discos con la duración total del mismo, editados antes del año 2000")
-    print("Colsulta 8. Lista de ediciones de discos deseados por el usuario Lorena Sáez Pérez que tiene el usuario Juan García Gómez")
-    print("Colsulta 9. Lista todas las ediciones de los discos que tiene el usuario Gómez García en un estado NM o M.")
-    print("Colsulta 10. Listar todos los usuarios junto al número de ediciones que tiene de todos los discos junto al año de lanzamiento de su disco más antiguo, el año de lanzamiento de su disco más nuevo, y el año medio de todos sus discos de su colección")
-    print("Colsulta 11. Listar el nombre de los grupos que tienen más de 5 ediciones de sus discos en la base de datos")
-    print("Colsulta 12. Lista el usuario que más discos, contando todas sus ediciones tiene en la base de datos\n")
-    print(" Opción 13. Insertar disco")
+    print("\nOpciones:")
+    print("1. Consultas predefinidas (elige de la lista)")
+    print("2. Insertar un nuevo disco con su grupo y canciones")
+    print("0. Salir\n")
 
-def hacer_consultas(opcion):
-    if(opcion == 1):
-        query =
-    elif(opcion == 2):
-        query = 
-    elif(opcion == 3):
-        query = 
-    elif(opcion == 4):
-        query = 
-    elif(opcion == 5):
-        query = 
-    elif(opcion == 6):
-        query = 
-    elif(opcion == 7):
-        query = 
-    elif(opcion == 8):
-        query = 
-    elif(opcion == 9):
-        query = 
-    elif(opcion == 10):
-        query = 
-    elif(opcion == 11):
-        query = 
-    elif(opcion == 12):
-        query = 
-    elif(opcion == 13):
-        query = 
-    else: print("La opción introducida no es valida")
-    return query
+"""
+Ejecuta una consulta SQL en la base de datos y salta errores de codificación.
+"""
+def ejecutar_consulta(conn, query):
+    try:
+        with conn.cursor() as cur:
+            cur.execute(query)
+            resultados = cur.fetchall()
+            for fila in resultados:
+                print([str(col).encode('utf-8', 'ignore').decode('utf-8', 'ignore') for col in fila])
+    except psycopg2.Error as db_err:
+        print(f"Error al ejecutar consulta: {db_err}")
+    except UnicodeDecodeError as e:
+        print(f"Error de codificación: {e}")
+
+
+"""
+Inserta un nuevo disco, grupo y canciones.
+"""
+def insertar_disco(conn):
+    try:
+        grupo = input("Nombre del grupo: ")
+        disco = input("Título del disco: ")
+        anio = int(input("Año de publicación: "))
+        genero = input("Género: ")
+        with conn.cursor() as cur:
+            cur.execute("SELECT id FROM grupos WHERE nombre = %s", (grupo,))
+            grupo_id = cur.fetchone()
+            if not grupo_id:
+                cur.execute("INSERT INTO grupos (nombre) VALUES (%s) RETURNING id", (grupo,))
+                grupo_id = cur.fetchone()[0]
+
+            cur.execute("""
+                INSERT INTO discos (titulo, anio, genero, grupo_id) 
+                VALUES (%s, %s, %s, %s) RETURNING id
+            """, (disco, anio, genero, grupo_id))
+            disco_id = cur.fetchone()[0]
+
+            print("Añade canciones al disco (deja vacío para terminar):")
+            while True:
+                cancion = input("Nombre de la canción: ")
+                if not cancion:
+                    break
+                duracion = int(input("Duración en segundos: "))
+                cur.execute("""
+                    INSERT INTO canciones (nombre, duracion, disco_id) 
+                    VALUES (%s, %s, %s)
+                """, (cancion, duracion, disco_id))
+
+            conn.commit()
+            print("Disco, grupo y canciones insertados correctamente.")
+    except Exception as e:
+        conn.rollback()
+        print(f"Error al insertar: {e}")
 
 def main():
-    """
-        main :: () -> IO None
-    """
     try:
-        (host, port, user, password, database) = ask_conn_parameters()          #
-        connstring = f'host={host} port={port} user={user} password={password} dbname={database}' 
-        conn    = psycopg2.connect(connstring)                                  #
-                                                                               
-        cur     = conn.cursor()                                                 # instacia un cursor
-        query   = 'SELECT * FROM discos'                                        # prepara una consulta
-        cur.execute(query)                                                      # ejecuta la consulta
-        for record in cur.fetchall():                                           # fetchall devuelve todas las filas de la consulta
-            print(record)                                                       # imprime las filas
-        cur.close                                                               # cierra el cursor
-        conn.close                                                              # cierra la conexion
-    except portException:
-        print("The port is not valid!")
-    except KeyboardInterrupt:
-        print("Program interrupted by user.")
-    finally:
-        print("Program finished")
+        host, port, user, password, database = ask_conn_parameters()
+        conn_str = f"host={host} port={port} user={user} password={password} dbname={database}"
+        conn = psycopg2.connect(conn_str)
 
-#def prueba_conexion():
+        conn.set_client_encoding('UTF8')
+        print("Conexión establecida.")
 
+        while True:
+            opciones_programa()
+            opcion = int(input("Selecciona una opción: "))
+            if opcion == 0:
+                print("Saliendo del programa.")
+                break
+            elif opcion == 1:
+                query = input("Escribe tu consulta SQL: ")
+                ejecutar_consulta(conn, query)
+            elif opcion == 2:
+                insertar_disco(conn)
+            else:
+                print("Opción no válida.")
 
-if __name__ == "__main__":                                                      # Es el modula principal?
-    if '--test' in sys.argv:                                                    # chequea el argumento cmdline buscando el modo test
-        import doctest                                                          # importa la libreria doctest
-        doctest.testmod()                                                       # corre los tests
-    else:                                                                       # else
-        main()                                                                  # ejecuta el programa principal
+        conn.close()
+    except PortException as pe:
+        print(pe)
+    except psycopg2.OperationalError as conn_err:
+        print(f"Error al conectar a la base de datos: {conn_err}")
+    except Exception as e:
+        print(f"Error general: {e}")
 
-
-# CODIGO TUYO PREVIO
-# Datos de conexión
-host = "localhost"
-dbname = "bdpl2" 
-user = "gestor_user"  
-password = "gestor_password"
-
-try:
-    print("Conectando con PostgreSQL...")
-    # Conexión
-    conn = psycopg2.connect(
-        host=host,
-        dbname=dbname,
-        user=user,
-        password=password
-    )
-    print("Conexión exitosa")
-    
-    # Cursor
-    cur = conn.cursor()
-    print("Cursor creado")
-
-    # Versión de la base de datos
-    cur.execute("SELECT version();")
-    db_version = cur.fetchone()
-    print(f"Versión de la base de datos: {db_version}")
-    
-    # Cerrar cursor
-    cur.close()
-    conn.close()
-
-except Exception as e:
-    print(f"Error al conectar: {e}")
+if __name__ == "__main__":
+    main()

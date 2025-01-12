@@ -5,7 +5,7 @@
 SET client_encoding = 'UTF8';
 
 -- Crea una nueva base de datos llamada "bdpl2" con configuraciones personalizadas.
-CREATE DATABASE bdpl2;
+CREATE DATABASE bdpl2_miguel_angel_y_javier;
 
 -- Establece la codificación de caracteres del cliente a UTF-8 de nuevo para solventar los problemas locales con Windows.
 WITH 
