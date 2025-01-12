@@ -6,25 +6,23 @@ SET search_path TO store;
 BEGIN;
 
 \echo 'Prueba ADMIN (puede hacer lo que quiera)'
-
+-- Ponemos el role a la persona que van a ser las pruebas
 SET ROLE jefazo;
 
+-- Inserta un disco
 INSERT INTO discos (titulo_disco, fecha_publicacion, url_portada, nombre_grupo)
 VALUES ( 'NuevoDisco', 2022, 'http://somoslosbostadenuevo.com/foto.jpg','Los Bosta');
 
 SELECT * FROM discos WHERE fecha_publicacion = 2022
 LIMIT 3;
 
-\echo 'Se actualiza el disco de prueba al año de publicación 2019'
-
+-- Actualiza info del disco
 UPDATE discos SET fecha_publicacion = 2021 WHERE nombre_grupo = 'Los Bosta' AND titulo_disco = 'NuevoDisco';
-
 SELECT * FROM discos WHERE fecha_publicacion = 2021
 ORDER BY fecha DESC
 LIMIT 1;
 
-
-
+-- Borra el disco
 DELETE FROM discos WHERE nombre_grupo = 'Los Bosta' AND titulo_disco = 'NuevoDisco';
 
 
@@ -33,7 +31,7 @@ ORDER BY fecha DESC
 LIMIT 1;
 
 
-\echo 'Se crea una tabla nueva, se inserta valor, y se muestra'
+-- Crea una tabla con un valor
 
 CREATE TABLE test(
     test TEXT
@@ -41,8 +39,7 @@ CREATE TABLE test(
 
 INSERT INTO test (test) VALUES ('esto es un ejemplo');
 SELECT * FROM test;
-
-\echo 'Se elimina la tabla'
+-- Elimina esa tabla
 DROP TABLE test;
 
 RESET ROLE;
@@ -54,7 +51,7 @@ BEGIN;
 --Prueba de gestores
 \echo 'Gestor(puede hacer todo como el jefazo pero sin crear tablas)'
 SET ROLE moderador;
-
+-- Inserta un disco
 INSERT INTO discos (titulo_disco, fecha_publicacion, url_portada, nombre_grupo) VALUES ( 'NuevoDisco', 2022, 'http://somoslosbostadenuevo.com/foto.jpg','Los Bosta');
 SELECT * FROM discos WHERE fecha_publicacion = 2022
 LIMIT 3;
@@ -75,16 +72,13 @@ ORDER BY fecha DESC
 LIMIT 1;
 
 
-\echo 'Creara una tabla, pero dara error porque no tiene permisos'
+-- Intenta crear una tabla pero da error
 
 CREATE TABLE test(
     test TEXT
 );
-
 INSERT INTO test (test) VALUES ('esto es un ejemplo');
 SELECT * FROM test;
-
-\echo 'Se elimina la tabla'
 DROP TABLE test;
 
 RESET ROLE;
@@ -111,7 +105,7 @@ VALUES ('juangomez', 'PersonaMID', 1990);
 
 SELECT * FROM u_desea_d WHERE nombre_usuario = 'juangomez';
 
-\echo 'Muestra actualización en auditoría: insert desea'
+
 SELECT * FROM auditoria
 ORDER BY fecha DESC
 LIMIT 1;
@@ -121,7 +115,6 @@ VALUES ('martamoreno', 'PersonaMID', 1990, 2000,'Chile', 'CD', 'NM');
 
 SELECT * FROM tiene WHERE nombre_usuario = 'martamoreno';
 
-\echo 'Muestra actualización en auditoría: insert desea'
 SELECT * FROM auditoria
 ORDER BY fecha DESC
 LIMIT 1;
@@ -142,4 +135,4 @@ LIMIT 3;
 SELECT * FROM usuarios WHERE nombre_usuario= 'juangomez';
 RESET ROLE;
 
-ROLLBACK;    
+ROLLBACK;      
