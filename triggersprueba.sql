@@ -1,11 +1,11 @@
 \pset pager off
 
 SET client_encoding = 'UTF8';
-SET search_path TO store;
+
 
 BEGIN;
 
-SELECT * FROM tienda.auditoria
+SELECT * FROM store.auditoria
 \echo '-----------------------MOSTRANDO CONSULTAS--------------------'
 
 
